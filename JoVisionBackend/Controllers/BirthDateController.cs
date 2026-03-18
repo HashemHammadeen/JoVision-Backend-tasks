@@ -6,12 +6,12 @@ namespace MyFirstApi.Controllers
     [Route("birthdate")]
     public class BirthDateController : ControllerBase
     {
-        [HttpGet("age")]
+        [HttpPost("age")]
         public IActionResult GetAge(
-            [FromQuery] string? name, 
-            [FromQuery] int? years, 
-            [FromQuery] int? months, 
-            [FromQuery] int? days)
+            [FromForm] string? name, 
+            [FromForm] int? years, 
+            [FromForm] int? months, 
+            [FromForm] int? days)
         {
             string displayName = string.IsNullOrWhiteSpace(name) ? "anonymous" : name;
 
