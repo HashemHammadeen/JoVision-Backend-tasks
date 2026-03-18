@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Ih5MSUf8jG4=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\hmsh\\Desktop\\field training\\joVison\\JoVision Backend\\JoVisionBackend\\JoVisionBackend.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\hmsh\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.3\\microsoft.aspnetcore.openapi.10.0.3.nupkg.sha512",
+    "C:\\Users\\hmsh\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
