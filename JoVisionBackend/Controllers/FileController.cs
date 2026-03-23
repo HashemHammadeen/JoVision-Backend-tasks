@@ -149,4 +149,101 @@ public class FileController : ControllerBase
             return StatusCode(500, "Internal server error during retrieval.");
         }
     }
+    [HttpPost("Filter")]
+    public async Task<IActionResult> Filter([FromForm] FilterRequest request)
+    {
+        try
+        {
+            var jsonFiles = Directory.GetFiles(_storagePath, "*.json");
+            var allMetadata = new List<(string FileName, FileMetadata Meta)>();
+
+            foreach (var file in jsonFiles)
+            {
+                var content = await System.IO.File.ReadAllTextAsync(file);
+                var meta = JsonSerializer.Deserialize<FileMetadata>(content);
+                if (meta != null)
+                {
+                var fileName = Path.GetFileNameWithoutExtension(file);
+                allMetadata.Add((fileName, meta));
+                }
+            }
+
+            IEnumerable<(string FileName, FileMetadata Meta)> filtered = request.FilterType switch
+            {
+                FilterType.ByModificationDate => allMetadata
+                    .Where(x => x.Meta.LastModifiedTime < request.ModificationDate),
+                
+                FilterType.ByCreationDateDescending => allMetadata
+                    .Where(x => x.Meta.CreationTime > request.CreationDate)
+                    .OrderByDescending(x => x.Meta.CreationTime),
+                
+                FilterType.ByCreationDateAscending => allMetadata
+                    .Where(x => x.Meta.CreationTime > request.CreationDate)
+                    .OrderBy(x => x.Meta.CreationTime),
+                
+                FilterType.ByOwner => allMetadata
+                    .Where(x => x.Meta.Owner == request.Owner),
+                
+                _ => throw new ArgumentException("Invalid FilterType")
+            };
+
+            var result = filtered.Select(x => new FileSummary 
+            { 
+                FileName = x.FileName, 
+                OwnerName = x.Meta.Owner 
+            }).ToList();
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpGet("TransferOwnership")]
+    public async Task<IActionResult> TransferOwnership([FromQuery] string oldOwner, [FromQuery] string newOwner)
+    {
+        if (string.IsNullOrEmpty(oldOwner) || string.IsNullOrEmpty(newOwner))
+            return BadRequest("Both OldOwner and NewOwner are required.");
+
+        try
+        {
+            var jsonFiles = Directory.GetFiles(_storagePath, "*.json");
+            
+            foreach (var file in jsonFiles)
+            {
+                var content = await System.IO.File.ReadAllTextAsync(file);
+                var meta = JsonSerializer.Deserialize<FileMetadata>(content);
+
+                if (meta?.Owner == oldOwner)
+                {
+                    meta.Owner = newOwner;
+                    meta.LastModifiedTime = DateTime.UtcNow;
+                    await System.IO.File.WriteAllTextAsync(file, JsonSerializer.Serialize(meta));
+                }
+            }
+
+            var updatedFiles = Directory.GetFiles(_storagePath, "*.json")
+                .Select(f => JsonSerializer.Deserialize<FileMetadata>(System.IO.File.ReadAllText(f)))
+                .Where(m => m?.Owner == newOwner)
+                .Select(m => m!.Owner) 
+                .ToList();
+
+            var finalQuery = Directory.GetFiles(_storagePath, "*.json")
+                .Select(f => new { 
+                    Name = Path.GetFileNameWithoutExtension(f), 
+                    Meta = JsonSerializer.Deserialize<FileMetadata>(System.IO.File.ReadAllText(f)) 
+                })
+                .Where(x => x.Meta!.Owner == newOwner)
+                .Select(x => new FileSummary { FileName = x.Name, OwnerName = x.Meta!.Owner })
+                .ToList();
+
+            return Ok(finalQuery);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal error: {ex.Message}");
+        }
+    }
 }
