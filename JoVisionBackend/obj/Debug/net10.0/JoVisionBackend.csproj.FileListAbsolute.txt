@@ -35,3 +35,4 @@ C:\Users\hmsh\Desktop\field training\joVison\JoVision Backend\JoVisionBackend\ob
 C:\Users\hmsh\Desktop\field training\joVison\JoVision Backend\JoVisionBackend\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\hmsh\Desktop\field training\joVison\JoVision Backend\JoVisionBackend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\hmsh\Desktop\field training\joVison\JoVision Backend\JoVisionBackend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Users\hmsh\Desktop\field training\joVison\JoVision Backend\JoVisionBackend\bin\Debug\net10.0\Uploads\HMSH.jpg.json
