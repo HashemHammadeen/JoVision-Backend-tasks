@@ -14,7 +14,7 @@ public class FileController : ControllerBase
     }
 
     [HttpPost("Create")]
-    public async Task<IActionResult> Create( IFormFile file, [FromForm] string owner)
+    public async Task<IActionResult> Create(IFormFile file, [FromForm] string owner)
     {
         if (file == null || string.IsNullOrEmpty(owner))
             return BadRequest("Missing file or owner information.");
@@ -60,7 +60,6 @@ public class FileController : ControllerBase
             return BadRequest("FileName and FileOwner are required.");
 
         string filePath = Path.Combine(_storagePath, fileName);
-        filePath+= ".jpg"; 
         string jsonPath = filePath + ".json";
 
         if (!System.IO.File.Exists(filePath) || !System.IO.File.Exists(jsonPath))
@@ -82,6 +81,72 @@ public class FileController : ControllerBase
         catch (Exception)
         {
             return StatusCode(500, "Internal server error during deletion.");
+        }
+    }
+    [HttpPost("Update")]
+    public async Task<IActionResult> Update(IFormFile file, [FromForm] string owner)
+    {
+        if (file == null || string.IsNullOrEmpty(owner))
+            return BadRequest("Missing file or owner information.");
+
+        string filePath = Path.Combine(_storagePath, file.FileName);
+        string jsonPath = filePath + ".json";
+
+        if (!System.IO.File.Exists(filePath) || !System.IO.File.Exists(jsonPath))
+            return BadRequest("File does not exist. Use Create instead.");
+
+        try
+        {
+            string jsonContent = await System.IO.File.ReadAllTextAsync(jsonPath);
+            var metadata = JsonSerializer.Deserialize<FileMetadata>(jsonContent);
+
+            if (metadata?.Owner != owner)
+                return StatusCode(403, "Forbidden: You do not own this file.");
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            metadata.LastModifiedTime = DateTime.UtcNow;
+
+            string jsonString = JsonSerializer.Serialize(metadata);
+            await System.IO.File.WriteAllTextAsync(jsonPath, jsonString);
+
+            return Ok("Updated");
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Internal server error during update.");
+        }
+    }
+
+    [HttpGet("Retrieve")]
+    public async Task<IActionResult> Retrieve([FromQuery] string fileName, [FromQuery] string fileOwner)
+    {
+        if (string.IsNullOrEmpty(fileName) || string.IsNullOrEmpty(fileOwner))
+            return BadRequest("FileName and FileOwner are required.");
+
+        string filePath = Path.Combine(_storagePath, fileName);
+        string jsonPath = filePath + ".json";
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound("File not found.");
+
+        try
+        {
+            string jsonContent = await System.IO.File.ReadAllTextAsync(jsonPath);
+            var metadata = JsonSerializer.Deserialize<FileMetadata>(jsonContent);
+
+            if (metadata?.Owner != fileOwner)
+                return StatusCode(403, "Forbidden: Access denied.");
+
+            byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+            return File(fileBytes, "image/jpeg");
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Internal server error during retrieval.");
         }
     }
 }
